@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+"""Render the harness adapters from SPEC.md -- the spec is the one owner.
+
+usage: render-adapters [-h] [-V] [--check] [--spec FILE] [--out DIR]
+                       [--sections LIST] [--version] [--run-tests [FILTER]]
+
+Reads SPEC.md, splits it into its numbered sections, and writes the files
+each adapter needs from those sections. A hand edit to a rendered file is
+overwritten by the next render; `--check` renders to memory and exits 1
+when any file on disk differs, so a pre-commit hook can refuse drift.
+
+Standard library only; Python 3.9 or later; no shell. Runs the same on
+macOS, Linux and Windows.
+"""
+from __future__ import annotations
+
+import argparse
+import contextlib
+import hashlib
+import io
+import os
+import re
+import sys
+import tempfile
+import traceback
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
+from pathlib import Path
+
+VERSION = "0.1"
+EXIT_SOFTWARE = 70
+EXIT_INTERRUPT = 130
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+DEFAULT_SPEC = ROOT / "SPEC.md"
+DEFAULT_OUT = ROOT / "adapters"
+
+# Claude Code: the checks that need judgement, by moment. Sections 2.4 and
+# 2.6 are left out by default because a CLAUDE.md usually already states
+# its tool and agent conventions; pass --sections to change that.
+CLAUDE_SECTIONS = ("1", "2.1", "2.2", "2.3", "2.5")
+
+
+class Err(Exception):
+    """A failure with its code: ERROR <code> [<exit>]: <text>."""
+
+    def __init__(self, code: str, text: str, exit_code: int = 1) -> None:
+        super().__init__(text)
+        self.code = code
+        self.text = text
+        self.exit_code = exit_code
+
+
+def err(code: str, text: str, exit_code: int = 1) -> Err:
+    """Build the error to raise; the code is unique to its raising line."""
+    return Err(code, text, exit_code)
+
+
+@dataclass(frozen=True)
+class Section:
+    """One numbered section of the spec: its id ("2.1"), title and body."""
+
+    ident: str
+    title: str
+    body: str
+
+
+_HEADING = re.compile(r"^(#{2,3}) (\d+(?:\.\d+)?)\.? (.+?)\s*$")
+
+
+def parse_spec(text: str) -> dict[str, Section]:
+    """Split the spec at its numbered ## and ### headings.
+
+    A ## section's body ends where its first ### starts, so "2" holds the
+    introduction of section 2 and "2.1" its first subsection. Unnumbered
+    headings ("## Site parameters") close the previous section and are not
+    sections of their own.
+    """
+    sections: dict[str, Section] = {}
+    ident = ""
+    title = ""
+    lines: list[str] = []
+
+    def close() -> None:
+        if ident:
+            sections[ident] = Section(ident, title, "\n".join(lines).strip("\n") + "\n")
+
+    for line in text.splitlines():
+        m = _HEADING.match(line)
+        if m:
+            close()
+            ident, title, lines = m.group(2), m.group(3), []
+            continue
+        if line.startswith("## ") or line.startswith("### "):
+            close()
+            ident, title, lines = "", "", []
+            continue
+        if line.strip() == "---":
+            continue
+        lines.append(line)
+    close()
+    if not sections:
+        raise err("00001", "no numbered sections found in the spec")
+    return sections
+
+
+def pick(sections: dict[str, Section], wanted: Iterable[str]) -> list[Section]:
+    """The requested sections, in the order requested; a missing id is an error."""
+    out: list[Section] = []
+    for ident in wanted:
+        if ident not in sections:
+            raise err("00002", f"section {ident!r} is not in the spec")
+        out.append(sections[ident])
+    return out
+
+
+_CROSSREF = re.compile(r'\(see "([^"]+)" in (\d+\.\d+)\)')
+
+
+def detach_crossrefs(body: str, present: Iterable[str]) -> str:
+    """Point a cross-reference at the spec when its target is not rendered."""
+    kept = set(present)
+
+    def repl(m: re.Match[str]) -> str:
+        if m.group(2) in kept:
+            return m.group(0)
+        return f'(see the spec, {m.group(2)} "{m.group(1)}")'
+
+    return _CROSSREF.sub(repl, body)
+
+
+def spec_stamp(spec_text: str) -> str:
+    """A short hash of the spec, so a rendered file names what it came from."""
+    return hashlib.sha256(spec_text.encode("utf-8")).hexdigest()[:12]
+
+
+def render_claude_memory(spec_text: str, wanted: Iterable[str]) -> str:
+    """The section a Claude Code CLAUDE.md gets: the chosen spec sections."""
+    sections = parse_spec(spec_text)
+    chosen = pick(sections, wanted)
+    idents = [s.ident for s in chosen]
+    out = io.StringIO()
+    out.write("## CODE DESIGN: the checks, by the moment they fire\n\n")
+    out.write(
+        "<!-- rendered by tools/render-adapters from SPEC.md "
+        f"{spec_stamp(spec_text)}; do not edit here -- edit the spec and "
+        "re-render -->\n\n"
+    )
+    for s in chosen:
+        out.write(f"### {s.title}\n\n")
+        out.write(detach_crossrefs(s.body, idents))
+        out.write("\n")
+    return out.getvalue().rstrip("\n") + "\n"
+
+
+@dataclass(frozen=True)
+class Rendered:
+    """One output file: its path relative to the adapters directory and text."""
+
+    rel: str
+    text: str
+
+
+def render_all(spec_text: str, sections: Iterable[str]) -> list[Rendered]:
+    """Every rendered file, for every adapter this script knows."""
+    return [
+        Rendered("claude-code/CLAUDE.section.md", render_claude_memory(spec_text, sections)),
+    ]
+
+
+def write_atomic(path: Path, text: str) -> None:
+    """Write via a temp file in the same directory, then rename."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
+def build_id() -> str:
+    """A hash of the running file: identifies the exact bytes."""
+    data = Path(__file__).resolve().read_bytes()
+    return hashlib.sha256(data).hexdigest()[:12]
+
+
+def run(args: argparse.Namespace) -> int:
+    spec_path = Path(args.spec)
+    out_dir = Path(args.out)
+    try:
+        spec_text = spec_path.read_text(encoding="utf-8")
+    except OSError as e:
+        raise err("00003", f"cannot read the spec: {spec_path} ({e.strerror})") from e
+    wanted = tuple(s.strip() for s in args.sections.split(",") if s.strip())
+    rendered = render_all(spec_text, wanted)
+    differ: list[str] = []
+    for r in rendered:
+        target = out_dir / r.rel
+        on_disk = target.read_text(encoding="utf-8") if target.exists() else None
+        if on_disk == r.text:
+            if args.verbose:
+                print(f"    > {r.rel}  unchanged")
+            continue
+        differ.append(r.rel)
+        if args.check:
+            print(f" >>> {r.rel}  DIFFERS from the spec ({'missing' if on_disk is None else 'stale'})")
+        else:
+            write_atomic(target, r.text)
+            print(f" >>> {r.rel}  {'created' if on_disk is None else 'rewritten'} (from SPEC.md {spec_stamp(spec_text)})")
+    if args.check:
+        if differ:
+            print(f"--> {len(differ)} rendered file(s) out of date: run render-adapters")
+            return 1
+        print(f"in sync ({len(rendered)}/{len(rendered)} rendered files match the spec)")
+    elif not differ:
+        print(f"nothing to do ({len(rendered)}/{len(rendered)} rendered files already match the spec)")
+    return 0
+
+
+# --- tests -----------------------------------------------------------------
+
+SAMPLE_SPEC = """# sample
+
+## 1. Principles
+
+Two axes.
+
+## 2. Checks
+
+Intro of two.
+
+### 2.1 BEFORE
+
+- **deep** -- body (see "failure" in 2.4).
+
+### 2.4 The tool's face
+
+- **failure** -- one error call.
+
+## Site parameters
+
+| p | m |
+"""
+
+
+def t_parse_splits_numbered_sections() -> None:
+    s = parse_spec(SAMPLE_SPEC)
+    assert sorted(s) == ["1", "2", "2.1", "2.4"], sorted(s)
+    assert s["2.1"].title == "BEFORE"
+    assert s["1"].body == "Two axes.\n", repr(s["1"].body)
+    assert "| p | m |" not in "".join(x.body for x in s.values())
+
+
+def t_pick_keeps_order_and_rejects_unknown() -> None:
+    s = parse_spec(SAMPLE_SPEC)
+    assert [x.ident for x in pick(s, ["2.1", "1"])] == ["2.1", "1"]
+    try:
+        pick(s, ["9.9"])
+    except Err as e:
+        assert e.code == "00002"
+    else:
+        raise AssertionError("unknown section accepted")
+
+
+def t_crossref_detached_only_when_target_absent() -> None:
+    body = parse_spec(SAMPLE_SPEC)["2.1"].body
+    assert '(see "failure" in 2.4)' in detach_crossrefs(body, ["2.1", "2.4"])
+    assert '(see the spec, 2.4 "failure")' in detach_crossrefs(body, ["2.1"])
+
+
+def t_render_is_deterministic_and_stamped() -> None:
+    a = render_claude_memory(SAMPLE_SPEC, ["1", "2.1"])
+    b = render_claude_memory(SAMPLE_SPEC, ["1", "2.1"])
+    assert a == b
+    assert spec_stamp(SAMPLE_SPEC) in a
+    assert "### BEFORE" in a and "The tool's face" not in a
+
+
+def t_check_reports_drift_and_write_fixes_it() -> None:
+    with tempfile.TemporaryDirectory() as d, contextlib.redirect_stdout(io.StringIO()):
+        spec = Path(d) / "SPEC.md"
+        spec.write_text(SAMPLE_SPEC, encoding="utf-8")
+        ns = argparse.Namespace(spec=str(spec), out=str(Path(d) / "adapters"),
+                                sections="1,2.1", check=True, verbose=False)
+        assert run(ns) == 1, "missing file must fail --check"
+        ns.check = False
+        assert run(ns) == 0
+        ns.check = True
+        assert run(ns) == 0, "fresh render must pass --check"
+        target = Path(d) / "adapters" / "claude-code" / "CLAUDE.section.md"
+        target.write_text(target.read_text(encoding="utf-8") + "hand edit\n", encoding="utf-8")
+        assert run(ns) == 1, "hand edit must fail --check"
+
+
+def t_empty_spec_is_an_error() -> None:
+    try:
+        parse_spec("no headings here\n")
+    except Err as e:
+        assert e.code == "00001"
+    else:
+        raise AssertionError("empty spec accepted")
+
+
+TESTS: list[tuple[str, Callable[[], None]]] = [
+    ("parse splits numbered sections", t_parse_splits_numbered_sections),
+    ("pick keeps order and rejects unknown", t_pick_keeps_order_and_rejects_unknown),
+    ("crossref detached only when target absent", t_crossref_detached_only_when_target_absent),
+    ("render is deterministic and stamped", t_render_is_deterministic_and_stamped),
+    ("check reports drift and write fixes it", t_check_reports_drift_and_write_fixes_it),
+    ("empty spec is an error", t_empty_spec_is_an_error),
+]
+
+
+def run_tests(filt: str | None) -> int:
+    """TAP: the plan first, then one line per test as it ends."""
+    defined = sorted(n for n in globals() if n.startswith("t_"))
+    listed = sorted(f.__name__ for _, f in TESTS)
+    if defined != listed:
+        print(f"not ok 0 - test list incomplete: {sorted(set(defined) ^ set(listed))}")
+        return 1
+    chosen = [(t, f) for t, f in TESTS if not filt or filt in t]
+    print(f"1..{len(chosen)}")
+    failed = 0
+    for k, (title, fn) in enumerate(chosen, 1):
+        try:
+            fn()
+            print(f"ok {k} - {title}")
+        except Exception as e:  # noqa: BLE001 -- a test runner reports, it does not re-raise
+            failed += 1
+            print(f"not ok {k} - {title}: {e!r}")
+    return 1 if failed else 0
+
+
+# --- main ------------------------------------------------------------------
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        prog="render-adapters",
+        description="Render the harness adapters from SPEC.md; the spec is the one owner.",
+    )
+    p.add_argument("-V", "--verbose", action="store_true", help="also name the files that were already in sync")
+    p.add_argument("--check", action="store_true", help="render to memory and exit 1 if any file on disk differs")
+    p.add_argument("--spec", default=str(DEFAULT_SPEC), help="the spec to render from (default: SPEC.md beside tools/)")
+    p.add_argument("--out", default=str(DEFAULT_OUT), help="the adapters directory to write into (default: adapters/)")
+    p.add_argument("--sections", default=",".join(CLAUDE_SECTIONS),
+                   help=f"spec sections for the Claude Code memory (default: {','.join(CLAUDE_SECTIONS)})")
+    p.add_argument("--version", action="store_true", help="print version and the hash of the running file")
+    p.add_argument("--run-tests", nargs="?", const="", metavar="FILTER", help="run the built-in tests (TAP), optionally filtered")
+    return p.parse_args(argv)
+
+
+def main(argv: list[str]) -> int:
+    args = parse_args(argv)
+    if args.version:
+        print(f"render-adapters {VERSION} (build {build_id()})")
+        return 0
+    if args.run_tests is not None:
+        return run_tests(args.run_tests or None)
+    return run(args)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print("render-adapters: interrupted (Ctrl-C) -- rendered files are written whole or not at all", file=sys.stderr)
+        sys.exit(EXIT_INTERRUPT)
+    except Err as e:
+        print(f"ERROR {e.code} [{e.exit_code}]: {e.text}", file=sys.stderr)
+        sys.exit(e.exit_code)
+    except Exception:  # noqa: BLE001 -- the one place an unexpected error becomes one line + a trace file
+        trace = Path(tempfile.gettempdir()) / "render-adapters.trace"
+        trace.write_text(traceback.format_exc(), encoding="utf-8")
+        print(f"ERROR 00004 [{EXIT_SOFTWARE}]: unexpected failure -- trace in {trace}", file=sys.stderr)
+        sys.exit(EXIT_SOFTWARE)
