@@ -175,6 +175,14 @@ they are applied in the edit, not remembered afterwards.
   must fail against it. A test that passes before the fix certifies the
   bug.
   *Test:* the test fails on the neutered copy.
+- **tested at the right size** -- while working, only the tests the change
+  touches are run (`--run-tests <filter>`: seconds, not minutes); the FULL
+  suite runs once before the code is USED -- at install or deployment, at a
+  release, and before the commit that closes a slice of work -- and never
+  on every small edit. A commit between those points rests on the filtered
+  run and says so. A full run goes in the background like any long command.
+  *Test:* the install, deployment or release path refuses without a full
+  green run; no change triggered the full suite more than once.
 - **second run** -- a tool that enforces or installs state is run twice
   before the commit.
   *Test:* the second run changes nothing and prints nothing to change.
@@ -366,6 +374,7 @@ to commit the violation.
 | secret | gate | a grep on every command and file written: `-p'`, `--password=`, `token=` literals |
 | one kind, scoped | git hook | commit-msg checks the kind word; a path-scoped commit is the only form offered |
 | pinned, adversarial | suite + review | the suite's diff shows the test before the fix; the neutered copy is run |
+| tested at the right size | deploy/release path + memory | the step that installs, deploys or releases runs the tool's full `--run-tests` first and refuses on a failure; the working loop (filtered runs only) is memory |
 | second run | suite | the suite runs every enforcing command twice and asserts an empty second run |
 | clearer | judgement | memory |
 | usage, verbs, named for what it does, go | suite | help is parsed: usage regex; every destructive verb has a `go` form; `--x` has `--no-x` |
