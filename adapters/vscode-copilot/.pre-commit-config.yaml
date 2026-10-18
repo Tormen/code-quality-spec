@@ -1,0 +1,40 @@
+# Gates for a repository that adopts the spec -- the mechanical half of
+# layer 3, run before every commit (Copilot has no hook of its own).
+# Install: pip install pre-commit && pre-commit install
+# Versions below are examples; pin to what the project uses.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        # the spec's named rules plus a sane base; extend per project
+        args: ["--select", "E,F,W,B,BLE,FBT,ANN401,UP,SIM,RET,TRY,S", "--fix"]
+      - id: ruff-format
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.385
+    hooks:
+      - id: pyright
+        # strict mode comes from the project's pyrightconfig.json / pyproject
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        # -s is read from each script's shebang; pass -s <dialect> to pin it
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: shell-syntax
+        name: shell syntax (sh -n)
+        entry: sh -n
+        language: system
+        types: [shell]
+      - id: render-adapters-check
+        name: adapters rendered from the spec
+        entry: python3 tools/render-adapters --check
+        language: system
+        pass_filenames: false
+        files: ^(SPEC\.md|proof/scenarios\.md|tools/render-adapters|adapters/)
+        # only meaningful in the repository that carries the spec itself

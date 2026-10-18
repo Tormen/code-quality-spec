@@ -33,7 +33,31 @@ EXIT_INTERRUPT = 130
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DEFAULT_SPEC = ROOT / "SPEC.md"
+DEFAULT_SCENARIOS = ROOT / "proof" / "scenarios.md"
 DEFAULT_OUT = ROOT / "adapters"
+
+# Step 0 of every proof: how THIS harness shows what it loaded. The
+# scenarios themselves are harness-neutral and live in proof/scenarios.md.
+PROOF_STEP0 = {
+    "claude-code": (
+        "Claude Code loads `~/.claude/CLAUDE.md` and the project's `CLAUDE.md` "
+        "into every session, and a PreToolUse hook's own output appears in the "
+        "transcript. Step 0: ask the agent to quote the first line of the CODE "
+        "DESIGN section; if it cannot, the memory is not loaded. Then run the "
+        "gates once on purpose (write a file with `head -5`): the refusal must "
+        "appear."
+    ),
+    "vscode-copilot": (
+        "Copilot shows the instruction files it applied in the response's "
+        "references list (expand it under the answer). Step 0: ask any "
+        "question in Copilot Chat and confirm `.github/copilot-instructions.md` "
+        "is listed; open a `.py` file and confirm `python.instructions.md` "
+        "joins it; in agent mode confirm `AGENTS.md`. Absent means not "
+        "applied: wrong path, a glob that does not match, or the setting "
+        "`github.copilot.chat.codeGeneration.useInstructionFiles` is off. "
+        "Nothing below counts until step 0 passes."
+    ),
+}
 
 # Claude Code: the checks that need judgement, by moment. Sections 2.4 and
 # 2.6 are left out by default because a CLAUDE.md usually already states
@@ -141,16 +165,119 @@ def render_claude_memory(spec_text: str, wanted: Iterable[str]) -> str:
     idents = [s.ident for s in chosen]
     out = io.StringIO()
     out.write("## CODE DESIGN: the checks, by the moment they fire\n\n")
-    out.write(
-        "<!-- rendered by tools/render-adapters from SPEC.md "
-        f"{spec_stamp(spec_text)}; do not edit here -- edit the spec and "
-        "re-render -->\n\n"
-    )
+    out.write(_stamp_line(spec_text))
     for s in chosen:
         out.write(f"### {s.title}\n\n")
         out.write(detach_crossrefs(s.body, idents))
         out.write("\n")
     return out.getvalue().rstrip("\n") + "\n"
+
+
+_ROW = re.compile(r"^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$")
+
+
+def table_row(body: str, first_cell: str) -> str:
+    """The "how" cell of the enforcement-table row whose first cell matches."""
+    for line in body.splitlines():
+        m = _ROW.match(line)
+        if m and m.group(1) == first_cell:
+            return m.group(3)
+    raise err("00005", f"no table row starts with {first_cell!r}")
+
+
+def _stamp_line(spec_text: str) -> str:
+    return (
+        f"<!-- rendered by tools/render-adapters from SPEC.md {spec_stamp(spec_text)}; "
+        "do not edit here -- edit the spec and re-render -->\n\n"
+    )
+
+
+def _sections_text(sections: dict[str, Section], idents: list[str], heading: str) -> str:
+    out = io.StringIO()
+    for s in pick(sections, idents):
+        out.write(f"{heading} {s.title}\n\n")
+        out.write(detach_crossrefs(s.body, idents))
+        out.write("\n")
+    return out.getvalue()
+
+
+def _with_frontmatter(apply_to: str, text: str) -> str:
+    return f'---\napplyTo: "{apply_to}"\n---\n\n{text}'
+
+
+def render_copilot(spec_text: str) -> list[Rendered]:
+    """VS Code Copilot: repo-wide instructions, path-scoped ones, AGENTS.md.
+
+    Copilot sends `.github/copilot-instructions.md` with every request, so
+    it carries only what applies to every edit (layer 1 and the by-moment
+    checks); the tool's face and Python go into path-scoped instruction
+    files; the agent-behaviour groups go to AGENTS.md, which agent mode
+    reads.
+    """
+    s = parse_spec(spec_text)
+    stamp = _stamp_line(spec_text)
+    repo_wide = (
+        "# Code quality: the checks, by the moment they fire\n\n" + stamp
+        + _sections_text(s, ["1", "2.1", "2.2", "2.3"], "##")
+        + "\n## Scope\n\nPath-scoped instructions in `.github/instructions/` add the "
+        "tool-level and Python checks; `AGENTS.md` holds how the agent itself works. "
+        "Checks a tool can decide are enforced by the repository's pre-commit "
+        "configuration, not by this file.\n"
+    )
+    python = _with_frontmatter(
+        "**/*.py",
+        "# Python\n\n" + stamp + _sections_text(s, ["2.5"], "##")
+        + "\n## Mechanical checks (the linter and the type checker decide these)\n\n"
+        + table_row(s["3"].body, "Python mechanics") + "\n",
+    )
+    tool_face = _with_frontmatter(
+        "**/*.py,**/*.sh",
+        "# A command-line tool's face\n\n" + stamp + _sections_text(s, ["2.4"], "##"),
+    )
+    shell = _with_frontmatter(
+        "**/*.sh",
+        "# Shell\n\n" + stamp + "## Mechanical checks\n\n"
+        + table_row(s["3"].body, "shell mechanics") + "\n\n"
+        + "The `secret` and `crash-safe` checks of the repo-wide instructions apply "
+        "with particular force in shell: no secret literal in a command, every "
+        "write via a temporary file and rename.\n",
+    )
+    agents = (
+        "# How the agent works here\n\n" + stamp
+        + _sections_text(s, ["1", "2.6"], "##")
+    )
+    # The user-profile set: the same texts, for EVERY workspace of a VS Code
+    # user rather than one repository. There is no profile-level
+    # copilot-instructions.md or AGENTS.md, so those two become instruction
+    # files that apply to every path.
+    everywhere = _with_frontmatter("**", repo_wide)
+    agent_everywhere = _with_frontmatter("**", agents)
+    return [
+        Rendered("vscode-copilot/.github/copilot-instructions.md", repo_wide),
+        Rendered("vscode-copilot/.github/instructions/python.instructions.md", python),
+        Rendered("vscode-copilot/.github/instructions/tool-face.instructions.md", tool_face),
+        Rendered("vscode-copilot/.github/instructions/shell.instructions.md", shell),
+        Rendered("vscode-copilot/AGENTS.md", agents),
+        Rendered("vscode-copilot/user-profile/code-quality.instructions.md", everywhere),
+        Rendered("vscode-copilot/user-profile/agent.instructions.md", agent_everywhere),
+        Rendered("vscode-copilot/user-profile/python.instructions.md", python),
+        Rendered("vscode-copilot/user-profile/tool-face.instructions.md", tool_face),
+        Rendered("vscode-copilot/user-profile/shell.instructions.md", shell),
+    ]
+
+
+def render_proof(harness: str, scenarios: str) -> str:
+    """The harness's PROOF.md: its step 0, then the neutral scenarios."""
+    if harness not in PROOF_STEP0:
+        raise err("00006", f"no step 0 known for harness {harness!r}")
+    return (
+        f"# Proof -- {harness}\n\n"
+        "<!-- rendered by tools/render-adapters from proof/scenarios.md; do not edit "
+        "here -- edit the scenarios and re-render. Append runs under 'Runs'. -->\n\n"
+        "## Step 0 -- loaded?\n\n" + PROOF_STEP0[harness] + "\n\n"
+        + scenarios.split("\n", 1)[1].lstrip("\n")
+        + "\n## Runs\n\n(harness, version, date, scenarios passed / failed)\n"
+    )
 
 
 @dataclass(frozen=True)
@@ -161,10 +288,13 @@ class Rendered:
     text: str
 
 
-def render_all(spec_text: str, sections: Iterable[str]) -> list[Rendered]:
+def render_all(spec_text: str, sections: Iterable[str], scenarios: str) -> list[Rendered]:
     """Every rendered file, for every adapter this script knows."""
     return [
         Rendered("claude-code/CLAUDE.section.md", render_claude_memory(spec_text, sections)),
+        Rendered("claude-code/PROOF.md", render_proof("claude-code", scenarios)),
+        *render_copilot(spec_text),
+        Rendered("vscode-copilot/PROOF.md", render_proof("vscode-copilot", scenarios)),
     ]
 
 
@@ -196,7 +326,11 @@ def run(args: argparse.Namespace) -> int:
     except OSError as e:
         raise err("00003", f"cannot read the spec: {spec_path} ({e.strerror})") from e
     wanted = tuple(s.strip() for s in args.sections.split(",") if s.strip())
-    rendered = render_all(spec_text, wanted)
+    try:
+        scenarios = Path(args.scenarios).read_text(encoding="utf-8")
+    except OSError as e:
+        raise err("00007", f"cannot read the scenarios: {args.scenarios} ({e.strerror})") from e
+    rendered = render_all(spec_text, wanted, scenarios)
     differ: list[str] = []
     for r in rendered:
         target = out_dir / r.rel
@@ -237,19 +371,44 @@ Intro of two.
 
 - **deep** -- body (see "failure" in 2.4).
 
+### 2.2 WHILE
+
+- **name** -- one word.
+
+### 2.3 BEFORE committing
+
+- **scoped** -- own paths.
+
 ### 2.4 The tool's face
 
 - **failure** -- one error call.
+
+### 2.5 Python
+
+- **shaped** -- a dataclass.
+
+### 2.6 The agent itself
+
+**WHEN explaining** -- three parts.
+
+## 3. Enforcement
+
+| Check | Decided by | How |
+|---|---|---|
+| Python mechanics | linter | ruff: B006 |
+| shell mechanics | linter + gate | shellcheck; no `head -N` |
 
 ## Site parameters
 
 | p | m |
 """
 
+SAMPLE_SCENARIOS = "# Proof scenarios\n\nIntro.\n\n## BEFORE\n\n- **deep** -- *task* -> *seen*.\n"
+
 
 def t_parse_splits_numbered_sections() -> None:
     s = parse_spec(SAMPLE_SPEC)
-    assert sorted(s) == ["1", "2", "2.1", "2.4"], sorted(s)
+    assert sorted(s) == ["1", "2", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "3"], sorted(s)
     assert s["2.1"].title == "BEFORE"
     assert s["1"].body == "Two axes.\n", repr(s["1"].body)
     assert "| p | m |" not in "".join(x.body for x in s.values())
@@ -280,11 +439,52 @@ def t_render_is_deterministic_and_stamped() -> None:
     assert "### BEFORE" in a and "The tool's face" not in a
 
 
+def t_copilot_files_scoped_and_stamped() -> None:
+    files = {r.rel: r.text for r in render_copilot(SAMPLE_SPEC)}
+    assert len(files) == 10, sorted(files)
+    prof = files["vscode-copilot/user-profile/code-quality.instructions.md"]
+    assert prof.startswith('---\napplyTo: "**"\n---\n') and "scoped" in prof
+    assert files["vscode-copilot/user-profile/python.instructions.md"] == files["vscode-copilot/.github/instructions/python.instructions.md"]
+    py = files["vscode-copilot/.github/instructions/python.instructions.md"]
+    assert py.startswith('---\napplyTo: "**/*.py"\n---\n'), py[:40]
+    assert "ruff: B006" in py and "shaped" in py and "failure" not in py
+    sh = files["vscode-copilot/.github/instructions/shell.instructions.md"]
+    assert "no `head -N`" in sh
+    wide = files["vscode-copilot/.github/copilot-instructions.md"]
+    assert "scoped" in wide and "WHEN explaining" not in wide and spec_stamp(SAMPLE_SPEC) in wide
+    assert "WHEN explaining" in files["vscode-copilot/AGENTS.md"]
+
+
+def t_table_row_finds_how_cell_or_errors() -> None:
+    body = parse_spec(SAMPLE_SPEC)["3"].body
+    assert table_row(body, "Python mechanics") == "ruff: B006"
+    try:
+        table_row(body, "nothing")
+    except Err as e:
+        assert e.code == "00005"
+    else:
+        raise AssertionError("missing row accepted")
+
+
+def t_proof_has_step0_then_scenarios() -> None:
+    p = render_proof("vscode-copilot", SAMPLE_SCENARIOS)
+    assert p.index("Step 0") < p.index("references list") < p.index("- **deep**") < p.index("## Runs")
+    assert "# Proof scenarios" not in p, "the scenarios' own title must not repeat"
+    try:
+        render_proof("nowhere", SAMPLE_SCENARIOS)
+    except Err as e:
+        assert e.code == "00006"
+    else:
+        raise AssertionError("unknown harness accepted")
+
+
 def t_check_reports_drift_and_write_fixes_it() -> None:
     with tempfile.TemporaryDirectory() as d, contextlib.redirect_stdout(io.StringIO()):
         spec = Path(d) / "SPEC.md"
         spec.write_text(SAMPLE_SPEC, encoding="utf-8")
-        ns = argparse.Namespace(spec=str(spec), out=str(Path(d) / "adapters"),
+        scen = Path(d) / "scenarios.md"
+        scen.write_text(SAMPLE_SCENARIOS, encoding="utf-8")
+        ns = argparse.Namespace(spec=str(spec), scenarios=str(scen), out=str(Path(d) / "adapters"),
                                 sections="1,2.1", check=True, verbose=False)
         assert run(ns) == 1, "missing file must fail --check"
         ns.check = False
@@ -310,6 +510,9 @@ TESTS: list[tuple[str, Callable[[], None]]] = [
     ("pick keeps order and rejects unknown", t_pick_keeps_order_and_rejects_unknown),
     ("crossref detached only when target absent", t_crossref_detached_only_when_target_absent),
     ("render is deterministic and stamped", t_render_is_deterministic_and_stamped),
+    ("copilot files scoped and stamped", t_copilot_files_scoped_and_stamped),
+    ("table row finds how cell or errors", t_table_row_finds_how_cell_or_errors),
+    ("proof has step0 then scenarios", t_proof_has_step0_then_scenarios),
     ("check reports drift and write fixes it", t_check_reports_drift_and_write_fixes_it),
     ("empty spec is an error", t_empty_spec_is_an_error),
 ]
@@ -345,6 +548,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("-V", "--verbose", action="store_true", help="also name the files that were already in sync")
     p.add_argument("--check", action="store_true", help="render to memory and exit 1 if any file on disk differs")
     p.add_argument("--spec", default=str(DEFAULT_SPEC), help="the spec to render from (default: SPEC.md beside tools/)")
+    p.add_argument("--scenarios", default=str(DEFAULT_SCENARIOS), help="the proof scenarios (default: proof/scenarios.md)")
     p.add_argument("--out", default=str(DEFAULT_OUT), help="the adapters directory to write into (default: adapters/)")
     p.add_argument("--sections", default=",".join(CLAUDE_SECTIONS),
                    help=f"spec sections for the Claude Code memory (default: {','.join(CLAUDE_SECTIONS)})")
