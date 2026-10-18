@@ -46,6 +46,11 @@ That is the spec's own second face of CONSISTENCY, applied to itself.
   of your checkout (every workspace), or copy the `.github/` set into one
   repository; install the pre-commit configuration; run `PROOF.md`.
   Details in `adapters/vscode-copilot/README.md`.
+- **Proving it works**, in either harness: each adapter's README has a
+  numbered "Proof, step by step" -- the setting to make, what the harness
+  must show it loaded (step 0), the scenarios to run, and what to record
+  under `Runs` in its `PROOF.md`. Step 0 is repeated after every harness
+  update.
 - **Another harness.** Render from the spec: the memory is sections 1-2,
   the gates are section 3 in that harness's hook or pre-commit mechanism,
   the proof is `proof/scenarios.md` with that harness's own "loaded?"

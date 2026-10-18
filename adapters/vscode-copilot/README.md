@@ -51,6 +51,25 @@ that is the proof they come from the profile. A repository's own
    Append the run (Copilot version, VS Code version, date, result) under
    `Runs`.
 
+## Proof, step by step
+
+1. User settings: add the absolute path of
+   `<checkout>/adapters/vscode-copilot/user-profile` to
+   `chat.instructionsFilesLocations` (value `true`); confirm
+   `github.copilot.chat.codeGeneration.useInstructionFiles` is on.
+2. Open a folder that has **no** `.github/` of its own. Ask Copilot Chat
+   anything. Expand the references list under the answer:
+   `code-quality.instructions.md` and `agent.instructions.md` must be
+   listed. This is step 0 -- it proves the profile set is applied in
+   every workspace.
+3. Open a `.py` file and ask again: `python.instructions.md` and
+   `tool-face.instructions.md` join the list.
+4. Run the scenarios in `PROOF.md` (one task each; observe the stated
+   behaviour). Append under `Runs`: Copilot version, VS Code version,
+   date, passed/failed.
+5. If step 0 fails -- wrong path, a glob that does not match, or the
+   setting is off -- fix that and repeat before trusting anything else.
+
 ## How the memory is split, and why
 
 Copilot sends `.github/copilot-instructions.md` with **every** request, so

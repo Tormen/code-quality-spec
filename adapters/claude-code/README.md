@@ -44,8 +44,19 @@ call through, so a bug in the gate cannot stop work.
 `python3 hooks/gate.py --run-tests` runs its tests (TAP);
 `python3 hooks/gate.py --version` prints the hash of the running file.
 
-## Proof
+## Proof, step by step
 
-`PROOF.md`: step 0 (ask the agent to quote the first line of the CODE
-DESIGN section; write a file containing `head -5` and see the refusal),
-then one scenario per check. Append each run under `Runs`.
+1. Install the memory (above) and merge `settings.snippet.json` into
+   `settings.json`, with `<checkout>` replaced by the repository's
+   absolute path; start a new Claude Code session.
+2. Step 0, memory: ask the agent to quote the first line of the CODE
+   DESIGN section of its `CLAUDE.md`. If it cannot, the section is not
+   loaded.
+3. Step 0, gates: ask the agent to write a scratch shell file containing
+   `head -5 x`. The Write must be refused with
+   `[shell mechanics (BSD userland)]` named; the agent sees the refusal
+   in its transcript.
+4. Run the scenarios in `PROOF.md` (one task each; observe the stated
+   behaviour). Append under `Runs`: Claude Code version, date,
+   passed/failed.
+5. Re-run steps 2-3 after a Claude Code update before trusting the rest.
