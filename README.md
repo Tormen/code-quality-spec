@@ -22,6 +22,7 @@ not need).
 |---|---|
 | `SPEC.md` | the specification: principles, the checks by the moment they fire, what a machine enforces, how adapters are made, the site parameters |
 | `SOURCES.md` | one page per source book: thesis, what shaped which check, what was read and not adopted |
+| `notes/` | the reading notes behind SOURCES.md: one file per book read in full, chapter by chapter, in our own words, with page references -- the evidence for every pointer in SOURCES.md |
 | `proof/scenarios.md` | one task per check and the observable that shows it fired; harness-neutral |
 | `tools/render-adapters` | renders every adapter from the spec; `--check` fails when a rendered file was edited by hand or is stale |
 | `adapters/claude-code/` | Claude Code: `CLAUDE.section.md` (memory), `hooks/gate.py` + `settings.snippet.json` (gates), `PROOF.md` |

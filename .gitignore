@@ -2,3 +2,5 @@
 # container repository that force-adds them.
 *.local
 *.local.*
+# Reference books (PDFs): reading material, never content -- and too big for the remote
+,good-programming/
