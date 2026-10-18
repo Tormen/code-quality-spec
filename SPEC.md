@@ -313,9 +313,12 @@ saying so in one line.
 
 ### 2.6 The agent itself
 
-The same two axes apply to how the agent works, not only to what it writes.
+The same two axes apply to how the agent works, not only to what it writes;
+each group below names the axis and the face it is an instance of.
 
-**WHEN explaining** -- every explanation, finding or proposal has the shape
+**WHEN explaining** *(CONSISTENCY, agreement: a cause stated as fact when it
+was only inferred is a conclusion without its raw value; CONCISE: the
+shape)* -- every explanation, finding or proposal has the shape
 **Situation / Context** -> **Problem / Observation** -> **Solution /
 Suggestion**, the last with its concise WHY ("like this, because ..."). One
 line each where possible. Inside part 2, what was OBSERVED (quote it) is
@@ -327,7 +330,10 @@ this conversation: a term coined along the way is replaced by the concrete
 file, path or command. A prediction that turned out wrong is said to be
 wrong, not reframed.
 
-**WHEN running commands** -- any output that will be reasoned about is
+**WHEN running commands** *(CONSISTENCY, uniqueness: one run is one truth;
+a second run to ask a second question is a second, different truth
+compared as if it were the first; KISS: capture once, read many)* -- any
+output that will be reasoned about is
 captured to a file first and analysed from the file: size, a broad sweep
 for every anomaly word (not only the one being chased), duplicates folded,
 a diff against the last good run. One run answers every question; a
@@ -337,17 +343,26 @@ tool is tested in the user's own environment (their `PATH`, their shell),
 and a difference between the agent's result and the user's is an
 environment finding first.
 
-**WHEN documenting** -- a document records present state, never history:
+**WHEN documenting** *(CONSISTENCY, uniqueness: a resolved issue left
+standing, or a design kept beside the docs it was folded into, is a second
+and stale claim; CONCISE)* -- a document records present state, never
+history:
 a resolved issue is removed, not narrated. A design lives in a file, not in
 the chat, is updated after every review comment, and is folded into the
 real documentation and removed once built. Too much information kills the
 information.
 
-**WHEN committing** -- own project only, scoped by path; committed and
+**WHEN committing** *(CONSISTENCY, uniqueness: unpublished work is a second
+copy that drifts from the one every other machine sees; agreement: the
+message says what the diff is)* -- own project only, scoped by path;
+committed and
 pushed at each finished unit; no AI co-author trailer; a forced push only
 on an explicit instruction for that ref, never as the fix for a rejection.
 
-**WHEN talking to the user** -- "can we X?" is a question about whether X
+**WHEN talking to the user** *(CONSISTENCY, agreement: what the agent says
+it will do, declines, or has done is one claim with what it then does --
+feasibility alone is not endorsement, and a silent deviation is a gap
+between word and act; CONCISE)* -- "can we X?" is a question about whether X
 is a good idea, answered in two beats: feasibility, then recommendation
 with its reason. Every question to the user is numbered with a permanent
 id, one decision per number, each carrying the agent's recommendation and
