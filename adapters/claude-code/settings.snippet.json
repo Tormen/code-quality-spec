@@ -1,0 +1,27 @@
+{
+  "_comment": "Merge into ~/.claude/settings.json (or a project's .claude/settings.json). Replace <checkout> with the absolute path of this repository. On Windows use 'python' instead of 'python3'. Only pre-write and pre-bash can refuse (exit 2); post-write is advisory.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "python3 <checkout>/adapters/claude-code/hooks/gate.py pre-write", "timeout": 10 }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "python3 <checkout>/adapters/claude-code/hooks/gate.py pre-bash", "timeout": 5 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "python3 <checkout>/adapters/claude-code/hooks/gate.py post-write", "timeout": 60 }
+        ]
+      }
+    ]
+  }
+}
