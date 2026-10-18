@@ -13,8 +13,7 @@ notes, in our words, kept privately); the remaining two were written from
 long acquaintance with the books and are marked so.
 
 The checks these pages point at are the ones in `SPEC.md` sections 2.1 to
-2.6. A pointer written as *candidate* names an idea proposed for the spec
-and not yet decided.
+2.6.
 
 ---
 
@@ -61,14 +60,18 @@ try alternatives until it disappears.
   *analogue* (and the second face of CONSISTENCY).
 - After a change the code should look as if it had been designed for it;
   design knowledge lives next to the code, once, not in commit messages →
-  *clearer*, *one kind*.
+  *clearer*, *one kind*, *comment*.
 - Measure before and after any performance change; simplicity is usually
   the faster design → *WHEN running commands*, and the enforcement rule
   that optimisation needs a measurement.
 - Configuration parameters are often an unsolved problem exported to the
-  user; ask whether the code could compute a better value → *candidate*.
+  user; ask whether the code could compute a better value →
+  *configuration*.
 - Write the interface comment before the body and use its length as a
-  depth gauge → *candidate*.
+  depth gauge; a getter/setter pair or a method handing out an internal
+  collection is shallow → *deep*.
+- What cannot be defined away is masked low, aggregated high, or crashes →
+  *errors out*.
 
 **Read and not adopted.**
 - The case against test-driven development as "tactical programming in
@@ -252,11 +255,11 @@ offered as a tool to be weighed, not a rule.
   only and is counted so it shrinks → section 3 (type checker row).
 - Inheritance is a behavioural contract (invariants kept, preconditions not
   strengthened, postconditions not weakened); structural needs are met by
-  a protocol, and composition comes first → *candidate*.
+  a protocol, and composition comes first → *composed*.
 - Test value against cost; one logical assertion per test, with its
   message; do not mock what you own; mutation testing, not coverage, tells
   whether a suite catches anything → *adversarial* (the manual form of
-  mutation testing), and *candidate* for the rest.
+  mutation testing, named in the enforcement table), *self-test*.
 - Deduplicate only what changes for the same reason → *one owner*, read
   correctly.
 
@@ -293,7 +296,7 @@ often is the silent wrong answer.
   defaults; more than three return values are an object → the linter row
   of section 3, *shaped*.
 - Prefer integration tests that exercise real collaborators over
-  mock-heavy unit tests → *candidate*.
+  mock-heavy unit tests → *self-test*.
 - Measure with a profiler and a microbenchmark before optimising; pick the
   data structure before the algorithm → *WHEN running commands*.
 - A long chain of `isinstance` tests is a missing dispatch; the counter-
@@ -325,7 +328,7 @@ item that names the trap is usually there, with its reason.
   flag, null and type check is an accidental decision to be made
   polymorphic, and that invalid objects must never exist. We took the
   essential-versus-accidental test for a conditional ("would a domain
-  expert state this as an if?") into *general vs special* as *candidate*,
+  expert state this as an if?") into *general vs special*,
   and the fail-fast stance into *boundary*. Not adopted: the wholesale
   programme (no getters, no nulls, no optional parameters, no static
   methods, every class final or abstract, no ids in domain objects); it is

@@ -91,11 +91,17 @@ they are applied in the edit, not remembered afterwards.
   character, same scope, same destructiveness) is found, its shape copied,
   and named. When the analogue contradicts what taste proposed, the
   analogue wins, and the reply says so. Consistency is derived from the
-  tool, never from preference.
+  tool, never from preference. A convention is changed only with new
+  information and by converting every old use in the same change -- never
+  left beside the old.
   *Test:* the analogue is named.
 - **deep** -- the body does real work behind a short signature. A unit that
   only forwards its arguments to a near-identical signature, or two units
-  that can only be read together, is ONE unit: merge.
+  that can only be read together, is ONE unit: merge. A getter/setter pair
+  that exposes a field, or a method that hands out an internal collection,
+  is a shallow unit: expose the behaviour instead. Write the unit's
+  interface comment before its body; a comment that cannot be short says
+  the abstraction is wrong.
   *Test:* the body is clearly more than its signature and comment.
 - **one owner** -- a format, path, constant, protocol detail or order of
   steps known to two places has ONE owner that the others ask. Code is split
@@ -107,7 +113,10 @@ they are applied in the edit, not remembered afterwards.
   *Test:* write the everyday call -- does it name anything it does not use?
 - **general vs special** -- a shared helper knows nothing of any one
   caller; the special case sits in the caller, at the top. A special-case
-  `if` inside a general helper is the KISS exception-smell in code.
+  `if` inside a general helper is the KISS exception-smell in code. An `if`
+  stays in a shared unit only when a domain expert would state the rule as
+  an if; a branch on a type, a flag, a null or an environment name is
+  accidental and becomes its own unit or a dispatch.
   *Test:* a second, different caller could reuse the helper unchanged.
 - **twice** -- for anything that outlives the change (a configuration key,
   a command-line verb, a function others call) a second, genuinely
@@ -124,7 +133,10 @@ they are applied in the edit, not remembered afterwards.
   simply covered (`mkdir -p`; removing what is already gone is done). A
   guard that every caller would repeat moves INTO the unit. What still
   reaches the caller is something the caller can act on, reported through
-  the tool's one error call with its code (see "failure" in 2.4).
+  the tool's one error call with its code (see "failure" in 2.4). What
+  cannot be defined away is handled as low as the handling is useful and
+  aggregated as high as possible -- one handler for a class of failures,
+  not one per call; what nobody can act on crashes.
   *Test:* no guard repeated at two call sites.
 - **name** -- one concept, one word, across the whole tool; named for what
   it does. A name that is hard to find means the unit does not do one clear
@@ -138,7 +150,9 @@ they are applied in the edit, not remembered afterwards.
   long to be complete says the unit is too complex. Every comment, help
   line and README sentence is a CLAIM about behaviour: re-read in the SAME
   edit that changes the behaviour, and run by the test suite when it is a
-  command.
+  command. Design rationale lives next to the code it explains, once; other
+  places point at it; a commit message may carry a copy but is never its
+  only home.
   *Test:* delete the comment -- is anything lost that the code does not say?
 - **boundary** -- external input (arguments, configuration, files, the
   network, another tool's output) is checked ONCE, where it enters; inside,
@@ -262,7 +276,9 @@ they are applied in the edit, not remembered afterwards.
   none exists the tool exits non-zero and offers the most common places to
   write one, each as a paste-ready line, the offer FILTERED from the same
   list the search iterates so it can never name a path the tool does not
-  read. A variable holding the default of `X` is named `X_DEFAULT`.
+  read. A variable holding the default of `X` is named `X_DEFAULT`. A
+  parameter is added only when a user can choose better than the code can
+  compute; one that stays has a default.
   *Test:* the offer's paths are a subset of the search paths.
 - **version** -- `--version` identifies the exact bytes being run: the
   release number, the commit the file was stamped with, and a hash of the
@@ -274,7 +290,10 @@ they are applied in the edit, not remembered afterwards.
   it with `--run-tests [<filter>]`, reporting TAP-style (`1..N`, then one
   `ok`/`not ok` line per test as it ends). Each test sets up its own state;
   a filtered run passes alone. Every command example in help or README is
-  run by the suite.
+  run by the suite. Tests exercise real collaborators and mock only external
+  systems (network, payment, clock); every assertion names its expectation
+  and an exact value; a test that only asserts not-None or no-exception is
+  not a test.
 - **state and logs** -- a tool's persistent state (records, watermarks,
   caches, queues, flags) lives under `<per-user state dir>/<name>/`; its
   logs, and nothing else, under `<per-user log dir>/`. The split is strict:
@@ -292,7 +311,7 @@ they are applied in the edit, not remembered afterwards.
 ### 2.5 Python
 
 Static typing is enforced by the type checker in strict mode (layer 3), and
-the mechanical style checks are a linter's job, not a memory's. Three
+the mechanical style checks are a linter's job, not a memory's. Four
 checks need judgement:
 
 - **unrepresentable** -- a value from a fixed set is a `Literal` or an
@@ -311,6 +330,14 @@ checks need judgement:
   the type carries the proof; inside, `isinstance` on the tool's own data
   is a smell. ("boundary", in Python.)
   *Test:* `isinstance` appears only in parsing code.
+- **composed** -- inheritance only for a behavioural contract the subclass
+  keeps (invariants held, preconditions not strengthened, postconditions
+  not weakened); a structural need is a `Protocol`; mixins only, otherwise
+  single inheritance; never a subclass of a built-in. A class exists only
+  when there is state with an invariant to guard -- otherwise functions in
+  a module.
+  *Test:* every new subclass "behaves as" its parent; every new class
+  guards an invariant.
 
 A failure is raised as the tool's one root exception carrying its code
 (see "failure"), chained with `raise ... from e`; `except Exception` exists
@@ -397,7 +424,7 @@ to commit the violation.
 | crash-safe | suite | a test interrupts a write and runs again |
 | secret | gate | a grep on every command and file written: `-p'`, `--password=`, `token=` literals |
 | one kind, scoped | git hook | commit-msg checks the kind word; a path-scoped commit is the only form offered |
-| pinned, adversarial | suite + review | the suite's diff shows the test before the fix; the neutered copy is run |
+| pinned, adversarial | suite + review | the suite's diff shows the test before the fix; the neutered copy is run -- mutation testing, where a tool exists, is the automated form |
 | tested at the right size | deploy/release path + memory | the step that installs, deploys or releases runs the tool's full `--run-tests` first and refuses on a failure; the working loop (filtered runs only) is memory |
 | second run | suite | the suite runs every enforcing command twice and asserts an empty second run |
 | clearer | judgement | memory |
@@ -412,7 +439,7 @@ to commit the violation.
 | self-test | harness | `--run-tests` exists and prints `1..N` first |
 | state and logs | suite | the suite runs the tool with both roots pointed at temporary directories and asserts no write elsewhere, and no state file under the log root |
 | notifies | suite | `--test-mail` with a stub transport |
-| unrepresentable, shaped, parsed once | type checker + judgement | pyright strict (`"strict": ["**"]`); the rest memory |
+| unrepresentable, shaped, parsed once, composed | type checker + judgement | pyright strict (`"strict": ["**"]`); the rest memory |
 | Python mechanics | linter | ruff: `BLE001` blind except, `FBT001`/`FBT002` positional boolean, `B006` mutable default, `ANN401` `Any`, plus the project's selected rule set |
 | shell mechanics | linter + gate | `shellcheck -s <shebang dialect>`, `<shell> -n`; a gate refuses GNU-only flags in a script that targets BSD userland (`head -N`, `sed -r`, `grep -P`, `xargs -r`, `date -d`, `find -printf`, `stat -c`) |
 | WHEN running commands | gate | a gate refuses a known long command piped straight into `tail`/`head`/`grep` without a capture |
