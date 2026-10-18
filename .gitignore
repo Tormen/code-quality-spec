@@ -1,0 +1,4 @@
+# Private files: never published; carried between machines by a
+# container repository that force-adds them.
+*.local
+*.local.*
