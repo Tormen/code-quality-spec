@@ -275,6 +275,15 @@ they are applied in the edit, not remembered afterwards.
   `ok`/`not ok` line per test as it ends). Each test sets up its own state;
   a filtered run passes alone. Every command example in help or README is
   run by the suite.
+- **state and logs** -- a tool's persistent state (records, watermarks,
+  caches, queues, flags) lives under `<per-user state dir>/<name>/`; its
+  logs, and nothing else, under `<per-user log dir>/`. The split is strict:
+  log directories get rotated and truncated, and state kept among logs dies
+  with the first rotation policy that never knew it was there. Neither
+  lives in a temp directory, and nothing of either is hard-coded: both
+  roots come from the configuration, with these as their defaults.
+  *Test:* no write outside the two roots and the temp directory; no state
+  file under the log root.
 - **notifies** -- a tool that sends mail or messages offers `--test-mail`
   (one message through exactly the real path, non-zero when nothing was
   sent), and a message that cannot go out now is queued and retried, marked
@@ -401,6 +410,7 @@ to commit the violation.
 | configuration | suite | the offered paths are a subset of the searched paths; `--create-config` output sources cleanly |
 | version | suite | the file run through its deployed path and in its checkout print the same string |
 | self-test | harness | `--run-tests` exists and prints `1..N` first |
+| state and logs | suite | the suite runs the tool with both roots pointed at temporary directories and asserts no write elsewhere, and no state file under the log root |
 | notifies | suite | `--test-mail` with a stub transport |
 | unrepresentable, shaped, parsed once | type checker + judgement | pyright strict (`"strict": ["**"]`); the rest memory |
 | Python mechanics | linter | ruff: `BLE001` blind except, `FBT001`/`FBT002` positional boolean, `B006` mutable default, `ANN401` `Any`, plus the project's selected rule set |
@@ -441,15 +451,18 @@ when not applied?** (every mechanical check has a gate outside the model).
 
 ---
 
-## Parameters
+## Site parameters
 
-Named in angle brackets above; their values belong in a local file beside
-this one, not here.
+The checks above name five things that differ from one site to the next,
+in angle brackets. The spec never states their values: an adopter writes
+them once, in a local file beside this one, and every adapter reads them
+from there. The list below is the contract -- each entry says which check
+consumes it, and a parameter no check consumes does not belong here.
 
-| Parameter | Meaning |
-|---|---|
-| `<name>` | the tool's own name, also the name of its configuration file |
-| `<site config dir>` | the directory a site keeps its tools' configuration files in, searched before the user's home |
-| `<per-user state dir>` | where a tool keeps state that must survive (never a log or temp directory) |
-| `<per-user log dir>` | where a tool keeps its logs, and nothing else |
-| `<shebang dialect>` | the shell every script is written for and linted as |
+| Parameter | Meaning | Consumed by |
+|---|---|---|
+| `<name>` | the tool's own name; also the name of its configuration file and of its state directory | configuration, state and logs |
+| `<site config dir>` | the directory a site keeps its tools' configuration files in, searched before the user's home | configuration |
+| `<per-user state dir>` | the root under which a tool's persistent state lives, per user | state and logs |
+| `<per-user log dir>` | the root under which a tool's logs live, per user, and nothing else | state and logs |
+| `<shebang dialect>` | the shell every script is written for and linted as | shell mechanics (layer 3) |
