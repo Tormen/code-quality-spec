@@ -386,7 +386,10 @@ history:
 a resolved issue is removed, not narrated. A design lives in a file, not in
 the chat, is updated after every review comment, and is folded into the
 real documentation and removed once built. Too much information kills the
-information.
+information. A document is read WHOLE, as a stranger, before it is
+committed: the three CONCISE tests apply to the file, not to the paragraph
+just added, and a fact that appears twice in one document is a defect,
+whichever addition brought the second copy.
 
 **WHEN committing** *(CONSISTENCY, uniqueness: unpublished work is a second
 copy that drifts from the one every other machine sees; agreement: the

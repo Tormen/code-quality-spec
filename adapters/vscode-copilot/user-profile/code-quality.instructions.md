@@ -4,7 +4,7 @@ applyTo: "**"
 
 # Code quality: the checks, by the moment they fire
 
-<!-- rendered by tools/render-adapters from SPEC.md fffb136c0770; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 4f15993456b9; do not edit here -- edit the spec and re-render -->
 
 ## Principles
 

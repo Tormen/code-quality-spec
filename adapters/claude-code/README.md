@@ -32,11 +32,16 @@ second line carries the spec's stamp, so a stale section is visible.
 - `pre-bash` **refuses** `sudo`, a forced push, a secret literal, a known
   long command piped straight into tail/head/grep without a capture.
 - `post-write` is **advisory**: runs ruff and pyright (Python) or
-  shellcheck and the shell's `-n` (shell) when installed; prints findings;
-  never refuses.
+  shellcheck and the shell's `-n` (shell) when installed; for Markdown,
+  reports a sentence stated twice or a setting named in more than one
+  section (CONCISE, applied to the whole file); never refuses.
 
-Only what is never right is refused. A gate that fails internally prints
-one line and lets the call through, so a bug in the gate cannot stop work.
+Only what is never right is refused. A file whose job is to contain a
+pattern (a test fixture with a sample password) carries a line
+`gate:allow <check>` -- `secret`, `bsd`, `sudo` or `mutable-default` --
+and that one check is skipped for it; the token is visible in review. A
+gate that fails internally prints one line and lets the call through, so
+a bug in the gate cannot stop work.
 `python3 hooks/gate.py --run-tests` (TAP); `--version` prints the hash of
 the running file.
 
