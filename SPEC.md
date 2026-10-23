@@ -191,10 +191,12 @@ they are applied in the edit, not remembered afterwards.
   *Test:* the test fails on the neutered copy.
 - **tested at the right size** -- while working, only the tests the change
   touches are run (`--run-tests <filter>`: seconds, not minutes); the FULL
-  suite runs once before the code is USED -- at install or deployment, at a
-  release, and before the commit that closes a slice of work -- and never
-  on every small edit. A commit between those points rests on the filtered
-  run and says so. A full run goes in the background like any long command.
+  suite runs once before the code is USED -- at install, deployment or
+  release -- and never on every small edit, nor before a commit. When the
+  install or deployment path runs the full suite itself as its gate, that
+  run IS the one: nobody runs it ahead of it. A commit rests on the
+  filtered run and says so. A full run goes in the background like any
+  long command.
   *Test:* the install, deployment or release path refuses without a full
   green run; no change triggered the full suite more than once.
 - **second run** -- a tool that enforces or installs state is run twice

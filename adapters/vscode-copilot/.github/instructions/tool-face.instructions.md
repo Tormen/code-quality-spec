@@ -4,7 +4,7 @@ applyTo: "**/*.py,**/*.sh"
 
 # A command-line tool's face
 
-<!-- rendered by tools/render-adapters from SPEC.md 4f15993456b9; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md e1bd92090178; do not edit here -- edit the spec and re-render -->
 
 ## The tool's face (command line, output, errors, configuration)
 
