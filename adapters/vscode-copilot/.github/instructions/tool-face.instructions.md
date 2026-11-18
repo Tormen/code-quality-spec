@@ -4,7 +4,7 @@ applyTo: "**/*.py,**/*.sh"
 
 # A command-line tool's face
 
-<!-- rendered by tools/render-adapters from SPEC.md b95dac747091; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md f3f01a144401; do not edit here -- edit the spec and re-render -->
 
 ## The tool's face (command line, output, errors, configuration)
 
@@ -20,11 +20,12 @@ applyTo: "**/*.py,**/*.sh"
   state, and not the mechanism (`--eject`, not `--keep-mounted`, not
   `--set-eject`); `--no-x` negates `--x` and nothing else. Where the
   configuration selects a different action, the OUTPUT says which one ran.
-- **go** -- a verb that deletes, resets, overwrites or takes away runs in
-  two steps: `tool verb ...` shows what it would do and changes nothing;
-  `tool verb go ...` does exactly that. No `--force`, no "are you sure?"
-  prompt: a prompt cannot be answered from a pipe, and the plain run is
-  the review.
+- **go** -- a verb whose effect cannot be undone (it deletes, resets,
+  overwrites or takes away) runs in two steps: `tool verb ...` shows what it
+  would do and changes nothing; `tool verb go ...` does exactly that. No
+  `--force`, no "are you sure?" prompt: a prompt cannot be answered from a
+  pipe, and the plain run is the review. A verb whose effect can be undone
+  -- it reads, adds, or starts what a stop ends -- runs at once.
 - **three layers of output** -- the default prints what it did, found and
   changed; `-V` adds to it (every default line still printed, plus each
   command echoed before it runs and the detail the default left out); `-Q`

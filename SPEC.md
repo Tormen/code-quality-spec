@@ -61,9 +61,10 @@ carry the detail.
   the user" in 2.6)
 - **SAFE** -- nothing is lost and nothing is exposed. A removal can be
   undone. An install over an existing file merges instead of overwriting.
-  A file is replaced through temp file + rename. A destructive verb waits
-  for `go`. No secret goes on a command line. Only the user's explicit
-  word, given after the risk was named, lifts this.
+  A file is replaced through temp file + rename. What cannot be undone
+  waits for `go`; what can be undone runs at once, and an exception holds
+  only once the user names it. No secret goes on a command line. Only the
+  user's explicit word, given after the risk was named, lifts this.
   *Test:* what is lost or exposed if it stops halfway? -> crash-safe,
   secret (see "go" in 2.4).
 
@@ -315,11 +316,12 @@ they are applied in the edit, not remembered afterwards.
   state, and not the mechanism (`--eject`, not `--keep-mounted`, not
   `--set-eject`); `--no-x` negates `--x` and nothing else. Where the
   configuration selects a different action, the OUTPUT says which one ran.
-- **go** -- a verb that deletes, resets, overwrites or takes away runs in
-  two steps: `tool verb ...` shows what it would do and changes nothing;
-  `tool verb go ...` does exactly that. No `--force`, no "are you sure?"
-  prompt: a prompt cannot be answered from a pipe, and the plain run is
-  the review.
+- **go** -- a verb whose effect cannot be undone (it deletes, resets,
+  overwrites or takes away) runs in two steps: `tool verb ...` shows what it
+  would do and changes nothing; `tool verb go ...` does exactly that. No
+  `--force`, no "are you sure?" prompt: a prompt cannot be answered from a
+  pipe, and the plain run is the review. A verb whose effect can be undone
+  -- it reads, adds, or starts what a stop ends -- runs at once.
 - **three layers of output** -- the default prints what it did, found and
   changed; `-V` adds to it (every default line still printed, plus each
   command echoed before it runs and the detail the default left out); `-Q`

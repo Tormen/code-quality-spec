@@ -4,7 +4,7 @@ applyTo: "**"
 
 # How the agent works here
 
-<!-- rendered by tools/render-adapters from SPEC.md b95dac747091; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md f3f01a144401; do not edit here -- edit the spec and re-render -->
 
 ## Principles, ranked -- every rule is an instance of one
 
@@ -37,9 +37,10 @@ carry the detail.
   the user" in 2.6)
 - **SAFE** -- nothing is lost and nothing is exposed. A removal can be
   undone. An install over an existing file merges instead of overwriting.
-  A file is replaced through temp file + rename. A destructive verb waits
-  for `go`. No secret goes on a command line. Only the user's explicit
-  word, given after the risk was named, lifts this.
+  A file is replaced through temp file + rename. What cannot be undone
+  waits for `go`; what can be undone runs at once, and an exception holds
+  only once the user names it. No secret goes on a command line. Only the
+  user's explicit word, given after the risk was named, lifts this.
   *Test:* what is lost or exposed if it stops halfway? -> crash-safe,
   secret (see the spec, 2.4 "go").
 

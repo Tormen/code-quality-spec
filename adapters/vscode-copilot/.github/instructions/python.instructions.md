@@ -4,7 +4,7 @@ applyTo: "**/*.py"
 
 # Python
 
-<!-- rendered by tools/render-adapters from SPEC.md b95dac747091; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md f3f01a144401; do not edit here -- edit the spec and re-render -->
 
 ## Python
 
