@@ -1,6 +1,6 @@
 # Code quality: the checks, by the moment they fire
 
-<!-- rendered by tools/render-adapters from SPEC.md 69959e21f477; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 148bcff1760c; do not edit here -- edit the spec and re-render -->
 
 ## Principles, ranked -- every rule is an instance of one
 
@@ -112,8 +112,10 @@ carry the detail.
    the site parameters.
 10. **THEIR ENVIRONMENT** -- written for, and tested in, the place it runs:
     that platform's userland, the `<shebang dialect>` and the user's own
-    `PATH`.
-    *Test:* did it run there? (see the spec, 2.6 "WHEN running commands")
+    `PATH`. "You can now run X" is proven by running X as the user types it:
+    the installed copy their shell finds, never the source.
+    *Test:* did it run there, as the user types it? (see the spec, 2.6 "WHEN running
+    commands")
 
 **Where two collide**
 

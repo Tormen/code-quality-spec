@@ -140,8 +140,10 @@ carry the detail.
    the site parameters.
 10. **THEIR ENVIRONMENT** -- written for, and tested in, the place it runs:
     that platform's userland, the `<shebang dialect>` and the user's own
-    `PATH`.
-    *Test:* did it run there? (see "WHEN running commands" in 2.6)
+    `PATH`. "You can now run X" is proven by running X as the user types it:
+    the installed copy their shell finds, never the source.
+    *Test:* did it run there, as the user types it? (see "WHEN running
+    commands" in 2.6)
 
 **Where two collide**
 
