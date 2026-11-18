@@ -4,7 +4,7 @@ applyTo: "**"
 
 # Code quality: the checks, by the moment they fire
 
-<!-- rendered by tools/render-adapters from SPEC.md 314ab22fda97; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 2984cc650f48; do not edit here -- edit the spec and re-render -->
 
 ## Principles, ranked -- every rule is an instance of one
 
@@ -85,16 +85,20 @@ carry the detail.
 5. **END TO END** -- whoever starts a thing finishes it, and a machine does
    what a machine can. Work is committed and published. Documentation
    changes in the same edit. A tool sets itself up and cleans up after
-   itself. The user is never the courier.
-   *Test:* what is left for someone else? -> scoped, dependency.
+   itself. The user is never the courier. An open item waits on someone;
+   one that waits on nobody is started now, not listed: nothing wakes
+   anyone to do it later.
+   *Test:* what is left for someone else? Whom does each open item wait
+   on? -> scoped, dependency.
 6. **SYSTEMATIC** -- a finding is fixed once, everywhere, in the rule that
    allowed it, where that rule lives: never broader and never narrower. A
    correction given once holds from then on.
    *Test:* can it come back elsewhere or later?
 7. **NEVER SILENT** -- whatever was done, decided, skipped or failed is
-   said where the reader looks, in one line with its reason. State that
-   must outlive the conversation goes in a file, not in the chat.
-   *Test:* could it happen and nobody see it? (see "names its reason" in
+   said where the reader looks, in one line with its reason, and an open
+   item with whom it waits on. State that must outlive the conversation
+   goes in a file, not in the chat.
+   *Test:* could it happen and nobody see it? Whom does it wait on? (see "names its reason" in
    2.4)
 8. **STABLE** -- a second run changes nothing. An interrupt, a sleep, a
    power cut or a lost network leaves a state the next run takes up. A rule
