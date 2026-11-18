@@ -1,8 +1,6 @@
-## CODE DESIGN: the checks, by the moment they fire
+## Principles
 
 <!-- rendered by tools/render-adapters from SPEC.md e1bd92090178; do not edit here -- edit the spec and re-render -->
-
-### Principles
 
 Two axes carry everything below. Either alone produces confident, wrong
 code: the first without the second gives simple lies, the second without
@@ -48,6 +46,10 @@ Intuitive and clear fail in opposite directions: a legal text is clear and
 not intuitive; a flag called `--eject` over a setting that only unmounts is
 intuitive and not clear. Compact never wins against the other two: a line
 shortened until it needs decoding is not concise.
+
+## CODE DESIGN: the checks, by the moment they fire
+
+<!-- rendered by tools/render-adapters from SPEC.md e1bd92090178; do not edit here -- edit the spec and re-render -->
 
 ### BEFORE writing a unit (a function, class, module, verb or flag)
 

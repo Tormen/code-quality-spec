@@ -10,8 +10,9 @@ written by hand.
 ## Install
 
 1. Append `CLAUDE.section.md` to `~/.claude/CLAUDE.md` (every project) or
-   to a project's `CLAUDE.md`. Default content: spec sections 1, 2.1-2.3,
-   2.5. A `CLAUDE.md` that already states its tool and agent conventions
+   to a project's `CLAUDE.md`. Default content: spec section 1 as a
+   section of its own (the ranked principles), then 2.1-2.3 and 2.5 under
+   CODE DESIGN. A `CLAUDE.md` that already states its tool and agent conventions
    wants `--sections 2.1,2.2,2.3,2.5`; an empty one wants
    `--sections 1,2.1,2.2,2.3,2.4,2.5,2.6`.
 2. Merge `settings.snippet.json` into `settings.json`, `<checkout>`

@@ -159,14 +159,27 @@ def spec_stamp(spec_text: str) -> str:
 
 
 def render_claude_memory(spec_text: str, wanted: Iterable[str]) -> str:
-    """The section a Claude Code CLAUDE.md gets: the chosen spec sections."""
+    """The block a Claude Code CLAUDE.md gets from the chosen spec sections.
+
+    Layer 1 (the principles) governs everything in that file, not only the
+    code, so it is a section of its own, first; the chosen checks follow
+    under CODE DESIGN. Each section carries the stamp.
+    """
     sections = parse_spec(spec_text)
     chosen = pick(sections, wanted)
     idents = [s.ident for s in chosen]
+    principles = [s for s in chosen if s.ident == "1"]
+    checks = [s for s in chosen if s.ident != "1"]
     out = io.StringIO()
-    out.write("## CODE DESIGN: the checks, by the moment they fire\n\n")
-    out.write(_stamp_line(spec_text))
-    for s in chosen:
+    for s in principles:
+        out.write(f"## {s.title}\n\n")
+        out.write(_stamp_line(spec_text))
+        out.write(detach_crossrefs(s.body, idents))
+        out.write("\n")
+    if checks:
+        out.write("## CODE DESIGN: the checks, by the moment they fire\n\n")
+        out.write(_stamp_line(spec_text))
+    for s in checks:
         out.write(f"### {s.title}\n\n")
         out.write(detach_crossrefs(s.body, idents))
         out.write("\n")
@@ -439,6 +452,15 @@ def t_render_is_deterministic_and_stamped() -> None:
     assert "### BEFORE" in a and "The tool's face" not in a
 
 
+def t_principles_render_as_own_section() -> None:
+    a = render_claude_memory(SAMPLE_SPEC, ["1", "2.1"])
+    assert a.startswith("## Principles\n"), a[:40]
+    assert "### Principles" not in a
+    assert a.index("Two axes.") < a.index("## CODE DESIGN") < a.index("### BEFORE")
+    assert a.count(spec_stamp(SAMPLE_SPEC)) == 2
+    assert render_claude_memory(SAMPLE_SPEC, ["2.1"]).startswith("## CODE DESIGN")
+
+
 def t_copilot_files_scoped_and_stamped() -> None:
     files = {r.rel: r.text for r in render_copilot(SAMPLE_SPEC)}
     assert len(files) == 10, sorted(files)
@@ -510,6 +532,7 @@ TESTS: list[tuple[str, Callable[[], None]]] = [
     ("pick keeps order and rejects unknown", t_pick_keeps_order_and_rejects_unknown),
     ("crossref detached only when target absent", t_crossref_detached_only_when_target_absent),
     ("render is deterministic and stamped", t_render_is_deterministic_and_stamped),
+    ("principles render as own section", t_principles_render_as_own_section),
     ("copilot files scoped and stamped", t_copilot_files_scoped_and_stamped),
     ("table row finds how cell or errors", t_table_row_finds_how_cell_or_errors),
     ("proof has step0 then scenarios", t_proof_has_step0_then_scenarios),
