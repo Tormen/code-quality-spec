@@ -1,6 +1,6 @@
 ## Principles, ranked -- every rule is an instance of one
 
-<!-- rendered by tools/render-adapters from SPEC.md 8a72e1647efd; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md b95dac747091; do not edit here -- edit the spec and re-render -->
 
 This section names what the checks below are instances of, so a case no
 check covers is still decided right. There are three tiers. The FLOOR is
@@ -39,7 +39,7 @@ carry the detail.
 
 **CORE -- ranked, always applied**
 
-1. **INTUITIVE** -- everything we build (a tool, an application, a script,
+1. **INTUITIVE** -- everything we produce (a tool, an application, a script,
    a website, ...) is intuitive to use: right the first time for someone
    who never saw it, its source or the conversation. The word people type,
    a default that does the everyday thing, the concrete thing named instead
@@ -134,7 +134,7 @@ carry the detail.
 
 ## CODE DESIGN: the checks, by the moment they fire
 
-<!-- rendered by tools/render-adapters from SPEC.md 8a72e1647efd; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md b95dac747091; do not edit here -- edit the spec and re-render -->
 
 ### BEFORE writing a unit (a function, class, module, verb or flag)
 

@@ -69,7 +69,7 @@ carry the detail.
 
 **CORE -- ranked, always applied**
 
-1. **INTUITIVE** -- everything we build (a tool, an application, a script,
+1. **INTUITIVE** -- everything we produce (a tool, an application, a script,
    a website, ...) is intuitive to use: right the first time for someone
    who never saw it, its source or the conversation. The word people type,
    a default that does the everyday thing, the concrete thing named instead
