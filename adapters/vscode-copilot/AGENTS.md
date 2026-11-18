@@ -1,6 +1,6 @@
 # How the agent works here
 
-<!-- rendered by tools/render-adapters from SPEC.md 032fac614607; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 69959e21f477; do not edit here -- edit the spec and re-render -->
 
 ## Principles, ranked -- every rule is an instance of one
 
@@ -17,7 +17,9 @@ carry the detail.
   conclusion, a return value, an exit status and a document state what the
   behaviour does. A statement rests on something observed and shows it. A
   guess is marked as a guess. A thing is called absent only after someone
-  looked for it. A fix is proven by a test that fails without it.
+  looked for it. A fix is proven by a test that fails without it. A fact
+  learned from an outside source is written into the project's README with
+  its source and the time it was read, so it can be checked and aged.
   *Test:* which output shows it? -> comment, adversarial (see the spec, 2.4 "raw beside
   conclusion").
 - **THE USER'S CALL** -- some things belong to the person the work is

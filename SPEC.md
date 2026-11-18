@@ -45,7 +45,9 @@ carry the detail.
   conclusion, a return value, an exit status and a document state what the
   behaviour does. A statement rests on something observed and shows it. A
   guess is marked as a guess. A thing is called absent only after someone
-  looked for it. A fix is proven by a test that fails without it.
+  looked for it. A fix is proven by a test that fails without it. A fact
+  learned from an outside source is written into the project's README with
+  its source and the time it was read, so it can be checked and aged.
   *Test:* which output shows it? -> comment, adversarial (see "raw beside
   conclusion" in 2.4).
 - **THE USER'S CALL** -- some things belong to the person the work is
