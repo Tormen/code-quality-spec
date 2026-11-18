@@ -1,6 +1,6 @@
 # How the agent works here
 
-<!-- rendered by tools/render-adapters from SPEC.md 2984cc650f48; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 032fac614607; do not edit here -- edit the spec and re-render -->
 
 ## Principles, ranked -- every rule is an instance of one
 

@@ -187,6 +187,9 @@ they are applied in the edit, not remembered afterwards.
   steps known to two places has ONE owner that the others ask. Code is split
   by what it KNOWS, not by when it runs: read / parse / write as three
   functions that all know the file format is one decision spread over three.
+  A dependency on one program the user may replace (a terminal, say: its
+  detection, its escape codes, its paste behaviour) lives in ONE unit per
+  tool, which the rest asks by capability, so a switch touches that unit only.
   *Test:* grep the literal; a hit outside its owner is a leak.
 - **plain call** -- the everyday call carries no flag and no rarely used
   parameter; defaults cover it.

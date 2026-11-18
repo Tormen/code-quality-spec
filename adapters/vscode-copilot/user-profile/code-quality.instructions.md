@@ -4,7 +4,7 @@ applyTo: "**"
 
 # Code quality: the checks, by the moment they fire
 
-<!-- rendered by tools/render-adapters from SPEC.md 2984cc650f48; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 032fac614607; do not edit here -- edit the spec and re-render -->
 
 ## Principles, ranked -- every rule is an instance of one
 
@@ -155,6 +155,9 @@ carry the detail.
   steps known to two places has ONE owner that the others ask. Code is split
   by what it KNOWS, not by when it runs: read / parse / write as three
   functions that all know the file format is one decision spread over three.
+  A dependency on one program the user may replace (a terminal, say: its
+  detection, its escape codes, its paste behaviour) lives in ONE unit per
+  tool, which the rest asks by capability, so a switch touches that unit only.
   *Test:* grep the literal; a hit outside its owner is a leak.
 - **plain call** -- the everyday call carries no flag and no rarely used
   parameter; defaults cover it.
