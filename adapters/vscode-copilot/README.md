@@ -46,7 +46,7 @@ A repository's files are applied in addition to the profile's, not instead.
 ## Why the memory is split
 
 `.github/copilot-instructions.md` travels with **every** request, so it
-carries only what applies to every edit (the two axes, CONCISE, the
+carries only what applies to every edit (the ranked principles, the
 by-moment checks). Path-scoped files apply only when a matching file is
 in context: `python` (`**/*.py`), `tool-face` (`**/*.py,**/*.sh`),
 `shell` (`**/*.sh`). `AGENTS.md` is what agent mode reads: how the agent

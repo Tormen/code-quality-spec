@@ -4,7 +4,7 @@ applyTo: "**/*.py,**/*.sh"
 
 # A command-line tool's face
 
-<!-- rendered by tools/render-adapters from SPEC.md e1bd92090178; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 314ab22fda97; do not edit here -- edit the spec and re-render -->
 
 ## The tool's face (command line, output, errors, configuration)
 
@@ -40,8 +40,10 @@ applyTo: "**/*.py,**/*.sh"
   nothing: `OK [0]`, `healthy (3/3)`, `in sync (a1b2c3 = a1b2c3)`. In code,
   the same: when a function holds both a conclusion and its source, it
   compares them and refuses to print a contradiction.
-- **concise messages** -- a runtime message longer than two lines moves its
-  substance to help and leaves a one-line pointer (`--> see --emergency`).
+- **concise messages** -- a runtime message that needs more than two lines
+  moves its substance to help and leaves a one-line pointer (`--> see
+  --emergency`). A reason under a fatal ERROR (see "failure") is a pointer
+  of this kind.
 - **names its reason** -- whatever the tool does without being asked
   (creates, rewrites, removes, moves) says what and why in one line of the
   default output, beside the thing itself.
@@ -61,8 +63,13 @@ applyTo: "**/*.py,**/*.sh"
   `<code>` is a short number unique to the raising source line, so that
   grepping the code lands on the line. The code survives every refactoring:
   deferred or batched work carries it along. Every report of what a run did
-  or would do names the rule by its code.
-  *Test:* no two raising lines share a code.
+  or would do names the rule by its code. A fatal ERROR may guide: after
+  it come at most three likely reasons, the most likely first, one line
+  each with the command that checks it. Only reasons the tool can actually
+  tell apart are given. One or two is fine, and none is invented to fill
+  three. Anything more goes behind `--help <topic>`.
+  *Test:* no two raising lines share a code; no reason line lacks its
+  command.
 - **configuration** -- all runtime-tunable behaviour lives in one
   configuration file, sourced at start; the only place a default exists is
   the function `--create-config` prints from. Search order, first existing

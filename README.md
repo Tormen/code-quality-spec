@@ -6,13 +6,14 @@ once and turns into three things for the harness it runs in: **memories**
 repository enforces) and **proof** (how anyone can see that both
 happened). A product name appears only in the adapters.
 
-Two axes carry it. **KISS decides what to build**: complexity is the
-enemy, an exception is a smell, errors are defined out of existence.
-**CONSISTENCY proves it is what it says**: name, help, output, document
-and behaviour are one claim -- and no decision is stated twice, because
-two copies drift. Beneath both, one rule for every text: **CONCISE** --
-intuitive (right at first reading), clear (only one reading), compact
-(nothing the reader does not need).
+Every check is an instance of a ranked principle, in three tiers. The
+**floor** is never traded: TRUE (every claim matches the fact), THE
+USER'S CALL (what is theirs, they decide), SAFE (nothing lost, nothing
+exposed). The **core** is always applied: INTUITIVE, KISS, CONSISTENT
+(it does what it says, and says it once), CONCISE (intuitive, clear,
+compact). **Supporting**: END TO END, SYSTEMATIC, NEVER SILENT, STABLE,
+CONTAINED, THEIR ENVIRONMENT. `SPEC.md` section 1 ranks them and says
+which wins where two collide.
 
 ## Files
 

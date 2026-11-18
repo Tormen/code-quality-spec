@@ -57,7 +57,7 @@ try alternatives until it disappears.
 - Consistency within a codebase is earned by following what is already
   there and enforcing it in the commit path; a better idea is not a reason
   to break a convention unless the whole old usage is converted →
-  *analogue* (and the second face of CONSISTENCY).
+  *analogue* (and the uniqueness face of CONSISTENT).
 - After a change the code should look as if it had been designed for it;
   design knowledge lives next to the code, once, not in commit messages →
   *clearer*, *one kind*, *comment*.
@@ -105,7 +105,7 @@ catalogue of such habits, each short, each with a reason.
 **What shaped the spec.**
 - One representation of every piece of knowledge, so a change is made in
   one place -- their DRY, understood as knowledge, not text → *one owner*,
-  and the second face of CONSISTENCY (a second copy is a second claim).
+  and the uniqueness face of CONSISTENT (a second copy is a second claim).
 - Orthogonality: components that change for different reasons must not
   know about each other → *general vs special*, *deep*.
 - Crash early; a program that dies before doing damage tells no lies; do

@@ -4,7 +4,7 @@ applyTo: "**/*.py"
 
 # Python
 
-<!-- rendered by tools/render-adapters from SPEC.md e1bd92090178; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 314ab22fda97; do not edit here -- edit the spec and re-render -->
 
 ## Python
 
@@ -38,7 +38,7 @@ checks need judgement:
   guards an invariant.
 
 A failure is raised as the tool's one root exception carrying its code
-(see "failure"), chained with `raise ... from e`; `except Exception` exists
+(see the spec, 2.4 "failure"), chained with `raise ... from e`; `except Exception` exists
 at the top of `main` (where it becomes the one-line ERROR and the trace
 file) and where a foreign library's failures are turned into that root
 exception, nowhere else. A tool with third-party dependencies creates its
