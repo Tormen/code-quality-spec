@@ -1,6 +1,6 @@
 # How the agent works here
 
-<!-- rendered by tools/render-adapters from SPEC.md 148bcff1760c; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 8a72e1647efd; do not edit here -- edit the spec and re-render -->
 
 ## Principles, ranked -- every rule is an instance of one
 
@@ -41,11 +41,12 @@ carry the detail.
 
 **CORE -- ranked, always applied**
 
-1. **INTUITIVE** -- right the first time for someone who never saw the
-   source or the conversation: the word people type, a default that does
-   the everyday thing, the concrete thing named instead of a label. It
-   comes from 2 and 3 (systematic leads to logical, logical to intuitive),
-   never from taste.
+1. **INTUITIVE** -- everything we build (a tool, an application, a script,
+   a website, ...) is intuitive to use: right the first time for someone
+   who never saw it, its source or the conversation. The word people type,
+   a default that does the everyday thing, the concrete thing named instead
+   of a label. It comes from 2 and 3 (systematic leads to logical, logical
+   to intuitive), never from taste.
    *Test:* would a stranger get it right without asking? -> plain call,
    name (see the spec, 2.4 "adaptive").
 2. **KISS** -- one rule covers every case. Complexity grows one reasonable

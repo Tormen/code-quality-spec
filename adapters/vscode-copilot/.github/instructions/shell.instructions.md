@@ -4,7 +4,7 @@ applyTo: "**/*.sh"
 
 # Shell
 
-<!-- rendered by tools/render-adapters from SPEC.md 148bcff1760c; do not edit here -- edit the spec and re-render -->
+<!-- rendered by tools/render-adapters from SPEC.md 8a72e1647efd; do not edit here -- edit the spec and re-render -->
 
 ## Mechanical checks
 

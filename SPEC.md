@@ -69,11 +69,12 @@ carry the detail.
 
 **CORE -- ranked, always applied**
 
-1. **INTUITIVE** -- right the first time for someone who never saw the
-   source or the conversation: the word people type, a default that does
-   the everyday thing, the concrete thing named instead of a label. It
-   comes from 2 and 3 (systematic leads to logical, logical to intuitive),
-   never from taste.
+1. **INTUITIVE** -- everything we build (a tool, an application, a script,
+   a website, ...) is intuitive to use: right the first time for someone
+   who never saw it, its source or the conversation. The word people type,
+   a default that does the everyday thing, the concrete thing named instead
+   of a label. It comes from 2 and 3 (systematic leads to logical, logical
+   to intuitive), never from taste.
    *Test:* would a stranger get it right without asking? -> plain call,
    name (see "adaptive" in 2.4).
 2. **KISS** -- one rule covers every case. Complexity grows one reasonable
