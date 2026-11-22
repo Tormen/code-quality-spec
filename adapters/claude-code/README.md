@@ -29,9 +29,14 @@ second line carries the spec's stamp, so a stale section is visible.
 
 - `pre-write` (Write, Edit) **refuses** a GNU-only flag in a shell file, a
   secret literal, a mutable default in a Python signature, `sudo` in a
-  script: exit 2, one line per finding naming the check.
+  script, and in a shell script the two below that load the machine: exit 2,
+  one line per finding naming the check.
 - `pre-bash` **refuses** `sudo`, a forced push, a secret literal, a known
-  long command piped straight into tail/head/grep without a capture.
+  long command piped straight into tail/head/grep without a capture, a whole
+  suite (`--run-tests` with no filter: while working, only the tests a change
+  touches run -- `--run-tests <filter>` or `--changed` -- and the deployment
+  gate runs the whole suite), and load on the machine (a CPU burner, a suite
+  run in a loop) the user has not said yes to.
 - `post-write` is **advisory**: runs ruff and pyright (Python) or
   shellcheck and the shell's `-n` (shell) when installed; for Markdown,
   reports a sentence stated twice or a setting named in more than one
@@ -39,8 +44,10 @@ second line carries the spec's stamp, so a stale section is visible.
 
 Only what is never right is refused. A file whose job is to contain a
 pattern (a test fixture with a sample password) carries a line
-`gate:allow <check>` -- `secret`, `bsd`, `sudo` or `mutable-default` --
-and that one check is skipped for it; the token is visible in review. A
+`gate:allow <check>` -- `secret`, `bsd`, `sudo`, `mutable-default`,
+`full-suite` or `load` -- and that one check is skipped for it; the token
+is visible in review. A command takes `# gate:allow full-suite` or
+`# gate:allow load` the same way, once the user asked for it. A
 gate that fails internally prints one line and lets the call through, so
 a bug in the gate cannot stop work.
 `python3 hooks/gate.py --run-tests` (TAP); `--version` prints the hash of

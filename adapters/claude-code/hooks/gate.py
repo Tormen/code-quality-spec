@@ -8,7 +8,9 @@ gate that refuses exits 2 with the reason on standard error; everything
 else exits 0. Only what is never right is refused (a GNU-only flag in a
 shell script written for BSD userland, a secret literal in a command, a
 mutable default in a Python signature, `sudo`, a forced push, a long
-command piped straight into tail/head/grep without a capture); the
+command piped straight into tail/head/grep without a capture, a whole
+`--run-tests` suite, a CPU burner or a suite run in a loop -- the last
+two also in a shell script written to run them); the
 post-write gate is advisory: it runs the linters it finds and prints their
 findings as context.
 
@@ -114,6 +116,10 @@ FORCED_PUSH = re.compile(r"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*(\s--force(-with-lea
 LONG_CMD = re.compile(r"(--run-tests|\bpytest\b|\bmake\b|\bnpm\s+test\b|\bcargo\s+(test|build)\b|\btox\b)")
 STRAIGHT_PIPE = re.compile(r"\|\s*(tail|head|grep)\b")
 CAPTURE = re.compile(r"\btee\b|(?<![\d&])>>?\s*(?!&)\S")  # a redirect to a FILE; `2>&1` is not a capture
+# a whole suite: `--run-tests` with no filter after it (`--changed` picks what a change touched: a filter too)
+FULL_SUITE = re.compile(r"--run-tests(?=\s*($|[;&|>)\n]|\d>|-(?!-changed\b)))")
+# load on the machine: a CPU burner, or a suite run again and again in a loop
+LOAD = re.compile(r"\byes\s*>\s*/dev/null|\bstress(-ng)?\s|\b(while|until|for)\b[^\n]*[\s\S]*?\bdo\b[\s\S]*?--run-tests[\s\S]*?\bdone\b")
 
 SHELL_SUFFIXES = {".sh", ".bash", ".dash", ".zsh"}
 SHEBANG_SHELL = re.compile(r"^#!\s*\S*/(env\s+)?(sh|dash|bash|zsh|ksh)\b")
@@ -159,6 +165,8 @@ def check_write(path: str, text: str, on_disk: str = "") -> list[Finding]:
                 out.append(Finding("shell mechanics (BSD userland)", f"{name}: `{m.group(0).strip()}`"))
     if shell and "sudo" not in skip and SUDO.search(text):
         out.append(Finding("sudo", "a script of yours must not call sudo; run the privileged command and say it needs root"))
+    if shell:
+        out += check_tests(text, skip)
     if "secret" not in skip:
         for name, pat in SECRET_LITERALS:
             m = pat.search(text)
@@ -171,9 +179,23 @@ def check_write(path: str, text: str, on_disk: str = "") -> list[Finding]:
     return out
 
 
+def check_tests(text: str, skip: set[str]) -> list[Finding]:
+    """A command, or a shell script the agent writes to run: the tests the change touches, never the whole
+    suite (the deployment gate runs that), and no load on the machine unless the user said yes in chat."""
+    out: list[Finding] = []
+    if "full-suite" not in skip and FULL_SUITE.search(text):
+        out.append(Finding("full suite", "run only the tests the change touches (`--run-tests <filter>` or `--changed`); "
+                                         "the full suite is the deployment gate's -- `# gate:allow full-suite` only "
+                                         "where the user asked for it"))
+    if "load" not in skip and LOAD.search(text):
+        out.append(Finding("load", "a CPU burner or a suite in a loop loads the user's machine: ask in chat first; "
+                                   "after their yes, `# gate:allow load` in the command"))
+    return out
+
+
 def check_bash(command: str) -> list[Finding]:
     """pre-bash: what a command the agent runs must not be."""
-    out: list[Finding] = []
+    out: list[Finding] = check_tests(command, allowed(command))
     if SUDO.search(command):
         out.append(Finding("sudo", "never run sudo; hand the command over, or write a rollout step"))
     if FORCED_PUSH.search(command):
@@ -371,10 +393,29 @@ def t_sudo_and_forced_push() -> None:
 
 
 def t_long_command_needs_capture() -> None:
-    assert check_bash("./tool --run-tests 2>&1 | tail -n 2")
-    assert not check_bash("./tool --run-tests > /tmp/t.log 2>&1; tail -n 2 /tmp/t.log")
-    assert not check_bash("./tool --run-tests 2>&1 | tee /tmp/t.log | tail -n 2")
+    assert check_bash("./tool --run-tests x 2>&1 | tail -n 2")
+    assert not check_bash("./tool --run-tests x > /tmp/t.log 2>&1; tail -n 2 /tmp/t.log")
+    assert not check_bash("./tool --run-tests x 2>&1 | tee /tmp/t.log | tail -n 2")
     assert not check_bash("ls | head -n 3")
+
+
+def t_tests_at_the_right_size() -> None:
+    full = "full suite"
+    assert any(f.check == full for f in check_bash("./tool --run-tests > /tmp/t.log 2>&1")), "no filter: refused"
+    assert any(f.check == full for f in check_bash("./tool --run-tests"))
+    assert any(f.check == full for f in check_bash("./tool --run-tests 2>&1 | tee /tmp/t.log"))
+    assert any(f.check == full for f in check_bash("./tool --run-tests -V > /tmp/t.log"))
+    assert not check_bash('./tool --run-tests "a stale lock" > /tmp/t.log 2>&1')
+    assert not check_bash("./tool --run-tests --changed > /tmp/t.log 2>&1"), "--changed is a filter"
+    assert not check_bash("./tool --run-tests > /tmp/t.log 2>&1 # gate:allow full-suite"), "asked for"
+    assert not check_bash("git commit -m 'Test: --run-tests filtered, 8 passed'"), "prose naming the flag"
+    loop = "#!/bin/dash\nk=1\nwhile [ $k -le 3 ]; do\n  ./tool --run-tests 'x' > /tmp/$k.log 2>&1\n  k=$((k + 1))\ndone\n"
+    assert any(f.check == "load" for f in check_write("load.sh", loop)), "a suite in a loop, in a script"
+    assert any(f.check == "load" for f in check_write("load.sh", "#!/bin/dash\nyes > /dev/null &\n")), "a burner"
+    assert any(f.check == "load" for f in check_bash("for i in 1 2 3; do ./tool --run-tests x > /tmp/$i; done"))
+    assert not check_write("load.sh", "# gate:allow load\n" + loop), "after the user's yes"
+    assert not check_bash("yes | ./tool --install"), "yes answering prompts is no burner"
+    assert not check_write("notes.md", loop.split("\n", 1)[1]), "prose is not a script"
 
 
 def t_hook_input_parsing() -> None:
@@ -417,6 +458,7 @@ TESTS: list[tuple[str, Callable[[], None]]] = [
     ("mutable default python only", t_mutable_default_python_only),
     ("sudo and forced push", t_sudo_and_forced_push),
     ("long command needs capture", t_long_command_needs_capture),
+    ("tests at the right size", t_tests_at_the_right_size),
     ("hook input parsing", t_hook_input_parsing),
     ("markdown repeats whole file", t_markdown_repeats_whole_file),
     ("post-write is advisory", t_post_write_is_advisory),
