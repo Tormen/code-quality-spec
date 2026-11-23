@@ -34,8 +34,9 @@ second line carries the spec's stamp, so a stale section is visible.
 - `pre-bash` **refuses** `sudo`, a forced push, a secret literal, a known
   long command piped straight into tail/head/grep without a capture, a whole
   suite (`--run-tests` with no filter: while working, only the tests a change
-  touches run -- `--run-tests <filter>` or `--changed` -- and the deployment
-  gate runs the whole suite), and load on the machine (a CPU burner, a suite
+  touches run -- `--run-tests <filter>`, `--changed`, `--titles <FILE>` (the
+  tests listed) or `--list` (none runs) -- and the deployment gate runs the
+  whole suite), and load on the machine (a CPU burner, a suite
   run in a loop) the user has not said yes to.
 - `post-write` is **advisory**: runs ruff and pyright (Python) or
   shellcheck and the shell's `-n` (shell) when installed; for Markdown,

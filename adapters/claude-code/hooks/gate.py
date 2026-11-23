@@ -116,8 +116,10 @@ FORCED_PUSH = re.compile(r"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*(\s--force(-with-lea
 LONG_CMD = re.compile(r"(--run-tests|\bpytest\b|\bmake\b|\bnpm\s+test\b|\bcargo\s+(test|build)\b|\btox\b)")
 STRAIGHT_PIPE = re.compile(r"\|\s*(tail|head|grep)\b")
 CAPTURE = re.compile(r"\btee\b|(?<![\d&])>>?\s*(?!&)\S")  # a redirect to a FILE; `2>&1` is not a capture
-# a whole suite: `--run-tests` with no filter after it (`--changed` picks what a change touched: a filter too)
-FULL_SUITE = re.compile(r"--run-tests(?=\s*($|[;&|>)\n]|\d>|-(?!-changed\b)))")
+# a whole suite: `--run-tests` with no filter after it. Bounded, so no whole suite: `--changed` (what a change
+# touched), `--titles <FILE>` (exactly the tests listed) and `--list` (no test runs) -- a commit gate that picks
+# a tool's tests for it calls the last two
+FULL_SUITE = re.compile(r"--run-tests(?=\s*($|[;&|>)\n]|\d>|-(?!-(changed|titles|list)\b)))")
 # load on the machine: a CPU burner, or a suite run again and again in a loop
 LOAD = re.compile(r"\byes\s*>\s*/dev/null|\bstress(-ng)?\s|\b(while|until|for)\b[^\n]*[\s\S]*?\bdo\b[\s\S]*?--run-tests[\s\S]*?\bdone\b")
 
@@ -407,6 +409,9 @@ def t_tests_at_the_right_size() -> None:
     assert any(f.check == full for f in check_bash("./tool --run-tests -V > /tmp/t.log"))
     assert not check_bash('./tool --run-tests "a stale lock" > /tmp/t.log 2>&1')
     assert not check_bash("./tool --run-tests --changed > /tmp/t.log 2>&1"), "--changed is a filter"
+    assert not check_bash("./tool --run-tests --titles /tmp/t.txt > /tmp/t.log 2>&1"), "--titles runs the listed"
+    assert not check_bash("./tool --run-tests --list > /tmp/t.log 2>&1"), "--list runs no test"
+    assert any(f.check == full for f in check_bash("./tool --run-tests --listing > /tmp/t.log")), "a word, not a prefix"
     assert not check_bash("./tool --run-tests > /tmp/t.log 2>&1 # gate:allow full-suite"), "asked for"
     assert not check_bash("git commit -m 'Test: --run-tests filtered, 8 passed'"), "prose naming the flag"
     loop = "#!/bin/dash\nk=1\nwhile [ $k -le 3 ]; do\n  ./tool --run-tests 'x' > /tmp/$k.log 2>&1\n  k=$((k + 1))\ndone\n"
